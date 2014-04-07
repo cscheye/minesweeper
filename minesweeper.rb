@@ -7,32 +7,18 @@ class Minesweeper
   end
 
   def play
-    until game_over?
+    until board.game_over?
       board.display
       puts "Make your move"
       move = gets.chomp.split(',')
-      take_turn(move)
-      check_move
+      tile_status = board.take_turn(move)
+      board.check_move(tile_status)
     end
+
+    puts "Game over"
+    board.display
   end
 
-  def take_turn(move)
-    action, x, y = move[0], move[1].to_i, move[2].to_i
-    tile = board.tiles[x][y]
-
-    if action == 'r'
-      tile.revealed = true # also need to check neighbors
-    else
-      tile.flagged = true
-    end
-  end
-
-  def check_move
-
-  end
-
-  def game_over?
-  end
 end
 
 class Tile
@@ -55,8 +41,10 @@ class Tile
       'F'
     elsif !revealed
       '*'
+    elsif bombed
+      'B'
     else
-      '?'
+      '_'
       # fringe_squares #return number or string?
     end
   end
@@ -78,7 +66,34 @@ class Board
     end
   end
 
+  def take_turn(move)
+    action, x, y = move[0], move[1].to_i, move[2].to_i
+    tile = tiles[x][y]
 
+    if action == 'r'
+      tile.revealed = true # also need to check neighbors
+    else
+      tile.flagged = true
+    end
+
+    [x,y]
+  end
+
+  def check_move(pos)
+    x,y = pos[0],pos[1]
+    tile = tiles[x][y]
+    unless tile.flagged
+      if tile.bombed
+        @loser = true
+      else
+        #check neighbors
+      end
+    end
+  end
+
+  def game_over?
+    @winner || @loser
+  end
 
 end
 
