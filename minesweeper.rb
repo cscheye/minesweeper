@@ -1,10 +1,38 @@
 class Minesweeper
 
+  attr_accessor :board
+
   def initialize
     @board = Board.new
   end
 
+  def play
+    until game_over?
+      board.display
+      puts "Make your move"
+      move = gets.chomp.split(',')
+      take_turn(move)
+      check_move
+    end
+  end
 
+  def take_turn(move)
+    action, x, y = move[0], move[1].to_i, move[2].to_i
+    tile = board.tiles[x][y]
+
+    if action == 'r'
+      tile.revealed = true # also need to check neighbors
+    else
+      tile.flagged = true
+    end
+  end
+
+  def check_move
+
+  end
+
+  def game_over?
+  end
 end
 
 class Tile
@@ -37,20 +65,22 @@ end
 
 class Board
 
-  attr_accessor :board
+  attr_accessor :tiles
 
   def initialize(dimension = 9)
-    @board = Array.new(dimension) {Array.new(dimension) {Tile.make_tile}}
+    @tiles = Array.new(dimension) {Array.new(dimension) {Tile.make_tile}}
   end
 
   def display
-    puts "  #{(0..(board.count - 1)).to_a.join(' ')}"
-    board.each_with_index do |row, row_i|
+    puts "  #{(0..(tiles.count - 1)).to_a.join(' ')}"
+    tiles.each_with_index do |row, row_i|
       puts "#{row_i.to_s} #{row.map{ |tile| tile.display }.join(' ')}"
     end
   end
 
+
+
 end
 
-b = Board.new
-b.display
+g = Minesweeper.new
+g.play
