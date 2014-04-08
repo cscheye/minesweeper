@@ -1,10 +1,15 @@
 require 'debugger'
+require 'yaml'
 class Minesweeper
 
   attr_accessor :board
 
-  def initialize
-    @board = Board.new
+  def initialize(board = nil)
+    @board = board || Board.new
+  end
+
+  def self.load_game(filename)
+    Minesweeper.new(YAML::load_file(filename))
   end
 
   def play
@@ -12,11 +17,24 @@ class Minesweeper
       board.display
       puts "Make your move"
       move = gets.chomp.split(',')
+      if move[0] == 's'
+        save_game
+        return
+      end
       tile_status = board.take_turn(move)
     end
 
     puts "Game over"
     board.display
+  end
+
+  def save_game
+    puts "enter a filename"
+    filename = gets.chomp
+    File.open(filename, 'w') do |f|
+      board.to_yaml
+      board.tiles.each { |tile| tile.to_yaml }
+    end
   end
 
 end
@@ -175,5 +193,13 @@ class Board
 
 end
 
-g = Minesweeper.new
-g.play
+if __FILE__ == $PROGRAM_NAME
+  puts "Enter a filename of the game you want to load (press enter for new game)"
+  filename = gets.chomp
+  if filename == ''
+    g = Minesweeper.new
+  else
+    g = Minesweeper.load_game(filename)
+  end
+  g.play
+end
