@@ -105,7 +105,7 @@ class Board
       else
         neighbor_bombs_count = check_neighbor_bombs(tile)
         tile.reveal(neighbor_bombs_count)
-        # reveal_neighbors(x,y)  # also need to check neighbors
+        reveal_neighbors(tile)  # also need to check neighbors
       end
     else
       tile.flag
@@ -129,15 +129,21 @@ class Board
   end
 
   def reveal_neighbors(tile)
-    visited_tiles = []
-    neighbors(tile).each do |neighbor|
-      bomb_count = check_neighbor_bombs(neighbor)
 
-      if bomb_count == 0
-        neighbor.reveal("_")
-        reveal_neighbors(neighbor)
-      else
-        neighbor.reveal(bomb_count)
+    queue = [tile]
+
+    until queue.empty?
+      current_tile = queue.shift
+      neighbors(current_tile).each do |neighbor|
+        next if neighbor.flagged || neighbor.revealed
+        bomb_count = check_neighbor_bombs(neighbor)
+
+        if bomb_count == 0
+          neighbor.reveal("_")
+          queue << neighbor
+        else
+          neighbor.reveal(bomb_count)
+        end
       end
     end
   end
