@@ -94,7 +94,7 @@ class Board
   end
 
   def take_turn(move)
-    action, x, y = move[0], move[1].to_i, move[2].to_i
+    action, y, x = move[0], move[1].to_i, move[2].to_i
     tile = tiles[x][y]
 
     if action == 'r'
