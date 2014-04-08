@@ -75,15 +75,20 @@ end
 
 class Board
 
-  attr_accessor :tiles
+  attr_accessor :tiles, :bombed_tiles, :flagged_tiles
 
   def initialize(dimension = 9)
+    @bombed_tiles = []
+    @flagged_tiles = []
     @tiles = Array.new(dimension) {Array.new(dimension)}
     dimension.times do |i|
       dimension.times do |j|
-        @tiles[i][j] = Tile.make_tile([i,j])
+        new_tile = Tile.make_tile([i,j])
+        @tiles[i][j] = new_tile
+        @bombed_tiles << new_tile if new_tile.bombed?
       end
     end
+
   end
 
   def display
@@ -108,6 +113,10 @@ class Board
       end
     else
       tile.flag
+      self.flagged_tiles << tile
+      @winner = true if self.bombed_tiles.all? do |bombed_tile|
+        self.flagged_tiles.include?(bombed_tile)
+      end
     end
   end
 
