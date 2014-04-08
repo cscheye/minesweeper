@@ -1,3 +1,4 @@
+require 'debugger'
 class Minesweeper
 
   attr_accessor :board
@@ -12,7 +13,6 @@ class Minesweeper
       puts "Make your move"
       move = gets.chomp.split(',')
       tile_status = board.take_turn(move)
-      board.check_move(tile_status)
     end
 
     puts "Game over"
@@ -23,46 +23,73 @@ end
 
 class Tile
 
-  attr_accessor :flagged, :revealed, :bombed
+  NEIGHBOR_TILES =     [
+      [-1,-1],[0,-1],[1,-1],
+      [-1,0],        [1,0],
+      [-1,1], [0,1], [1,1]
+    ]
 
-  def initialize(bombed = false)
+
+  attr_accessor :flagged, :revealed, :bombed, :value, :position
+
+  def initialize(pos,bombed = false)
     @flagged = false
     @revealed = false
     @bombed = bombed
+    @value = '*'
+    @position = pos
   end
 
-  def self.make_tile
-    choice = rand(2)
-    choice == 0 ? Tile.new : Tile.new(true)
+  def bombed?
+    bombed
   end
 
-  def display
-    if flagged
-      'F'
-    elsif !revealed
-      '*'
-    elsif bombed
-      'B'
-    else
-      '_'
-      # fringe_squares #return number or string?
+  def self.make_tile(pos)
+    choice = rand(10)
+    choice == 0 ? Tile.new(pos,true) : Tile.new(pos)
+  end
+
+  def reveal(val)
+    self.revealed = true
+    self.value = (val == 0 ? '_' : val.to_s)
+  end
+
+  def flag
+    self.flagged = true
+    self.value = 'F'
+  end
+
+  def neighbor_positions
+    neighbors = []
+    x, y = position[0], position[1]
+    NEIGHBOR_TILES.each do |pos|
+      new_x, new_y = x + pos[0], y + pos[1]
+      next if !new_x.between?(0,8) || !new_y.between?(0,8)
+      neighbors << [new_x,new_y]
     end
+    neighbors
   end
-
 end
+
+
 
 class Board
 
   attr_accessor :tiles
 
   def initialize(dimension = 9)
-    @tiles = Array.new(dimension) {Array.new(dimension) {Tile.make_tile}}
+    @tiles = Array.new(dimension) {Array.new(dimension)}
+    dimension.times do |i|
+      dimension.times do |j|
+        @tiles[i][j] = Tile.make_tile([i,j])
+      end
+    end
   end
 
   def display
     puts "  #{(0..(tiles.count - 1)).to_a.join(' ')}"
     tiles.each_with_index do |row, row_i|
-      puts "#{row_i.to_s} #{row.map{ |tile| tile.display }.join(' ')}"
+      puts "#{row_i.to_s} #{row.map{ |tile| tile.value }.join(' ')}"
     end
   end
 
@@ -71,22 +98,56 @@ class Board
     tile = tiles[x][y]
 
     if action == 'r'
-      tile.revealed = true # also need to check neighbors
+      if tile.bombed?
+        @loser = true
+        tile.reveal('B')
+        reveal_all_tiles
+      else
+        neighbor_bombs_count = check_neighbor_bombs(tile)
+        tile.reveal(neighbor_bombs_count)
+        # reveal_neighbors(x,y)  # also need to check neighbors
+      end
     else
-      tile.flagged = true
+      tile.flag
     end
 
     [x,y]
   end
 
-  def check_move(pos)
-    x,y = pos[0],pos[1]
-    tile = tiles[x][y]
-    unless tile.flagged
-      if tile.bombed
-        @loser = true
+  def neighbors(tile)
+    tile.neighbor_positions.map do |pos|
+      tiles[pos[0]][pos[1]]
+    end
+  end
+
+  def check_neighbor_bombs(tile)
+    neighbor_bomb_count = 0
+    neighbors(tile).each do |neighbor|
+      neighbor_bomb_count += 1 if neighbor.bombed?
+    end
+    neighbor_bomb_count
+  end
+
+  def reveal_neighbors(tile)
+    visited_tiles = []
+    neighbors(tile).each do |neighbor|
+      bomb_count = check_neighbor_bombs(neighbor)
+
+      if bomb_count == 0
+        neighbor.reveal("_")
+        reveal_neighbors(neighbor)
       else
-        #check neighbors
+        neighbor.reveal(bomb_count)
+      end
+    end
+  end
+
+  def reveal_all_tiles
+    tiles.each do |row|
+      row.each do |tile|
+        unless tile.revealed
+          tile.bombed? ? tile.reveal('B') : tile.reveal('_')
+        end
       end
     end
   end
