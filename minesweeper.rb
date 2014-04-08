@@ -100,18 +100,15 @@ class Board
     if action == 'r'
       if tile.bombed?
         @loser = true
-        tile.reveal('B')
         reveal_all_tiles
       else
         neighbor_bombs_count = check_neighbor_bombs(tile)
         tile.reveal(neighbor_bombs_count)
-        reveal_neighbors(tile)  # also need to check neighbors
+        reveal_neighbors(tile) if neighbor_bombs_count == 0
       end
     else
       tile.flag
     end
-
-    [x,y]
   end
 
   def neighbors(tile)
@@ -129,7 +126,6 @@ class Board
   end
 
   def reveal_neighbors(tile)
-
     queue = [tile]
 
     until queue.empty?
@@ -151,9 +147,15 @@ class Board
   def reveal_all_tiles
     tiles.each do |row|
       row.each do |tile|
-        unless tile.revealed
-          tile.bombed? ? tile.reveal('B') : tile.reveal('_')
+        next if tile.revealed
+
+        if tile.flagged
+          char = (tile.bombed? ? '$' : 'X')
+        else
+          char = (tile.bombed? ? 'B' : '*')
         end
+
+        tile.reveal(char)
       end
     end
   end
